@@ -1,0 +1,271 @@
+Steps 
+1. Show dark full screen and a dialog box at the center of screen and take input from user.
+2. Custom Canvas Setup – Ask users to input canvas size (height & width) and background color
+3. same that full dark screen will continue and 
+	a. at the center show canvas. 
+	b. toolbar section show at top side. 
+	c. Remaining side space place for rough work
+	d. In toolbar, add options for image customization, canvas customization, notes
+4. Drag & Drop Images/Folders – Users can add single images, multiple images, or entire folders
+5. after drag all images -> give one option in toolbar for auto align all images. 
+	For auto align give 3 options - 
+		a. align with same height of image and adjust auto width of image
+		b. align with same width of image and adjust auto height of image
+		c. not adjust height and weight of image and ask for gap between two images horizontally and vertically	
+5. Auto-Align Images – Images align automatically (grid, smart clustering, or layered)
+6. Manual Arrangement – 
+	a. shuffle images, fit all image to screen, select all image -> same size	
+	b. Image Customize - 
+		crop, delete, copy, paste, duplicate image
+		image corner radius, image border, border color, drop shadow
+		resize, rotate, move, 
+		lock and unlock image
+		opacity control
+	c. Canvas Customize - 
+		margin set, image gap, , 
+		Canvas resize, color
+		override allowed / not allowed
+		zoom in/ zoom out	
+		Heading or logo at top and paragraph at four corner
+	d. Add notes 
+		Font size, font color, underline
+7. Export & Download – Save mood board as PDF, SVG, PNG, JPG, JPEG, or social media-ready images
+
+
+Features
+1. Offline-First App – Works completely offline
+2. Supports multiple image formats (JPG, PNG, GIF, etc.)
+3. Image grouping for better organization
+4. Lightweight software with minimal resource usage
+5. Bulk rename and metadata editing
+6. Dark mode for a comfortable viewing experience
+7. Save and load projects in a compact format
+8. Copy and paste images from other apps
+9. Supports multiple monitors
+10. Works seamlessly with creative tools like Photoshop, Figma, and Sketch
+11. click on a image -> focus image
+11. Available on Windows, macOS, and iPad
+
+
+More Features
+1. Infinite canvas for arranging references
+2. Zoom and pan with smooth navigation
+3. Snap-to-grid and alignment tools for organization
+4. Supports images, videos, GIFs, fonts, PDFs, and more
+5. Smart folders and tags for organization
+6. Image color recognition for easy search
+7. Image annotations and tagging
+8. resolution selection - above 300 dpi (dot per inches)
+9.  default font family
+10. Duplicate file detection
+
+
+
+Next Version
+9. Search by image color, aspect ratio, or file type
+6. Collaboration Mode – Share boards, comment, and allow multiple users to edit in real-time => delay
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PureRef_App/
+│
+├── main.py                  # Entry point of the application
+├── requirements.txt         # List of dependencies
+├── README.md                # Project documentation
+│
+├── assets/                  # Folder for storing images, icons, etc.
+│   └── icon.png             # App icon
+│
+├── modules/                 # Folder for modular code
+│   ├── ui_manager.py        # Manages the user interface
+│   ├── image_manager.py     # Handles image loading and display
+│   ├── canvas_manager.py    # Manages the canvas
+│   ├── toolbar_manager.py   # Handles toolbar functionality
+│   └── utils.py             # Utility functions
+│
+└── tests/                   # Folder for unit tests
+    └── test_image_manager.py
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+import tkinter as tk
+from tkinterdnd2 import DND_FILES, TkinterDnD
+from tkinter import filedialog, colorchooser
+from PIL import Image, ImageTk
+import os
+
+# Global variables
+images = []  
+image_refs = []  
+canvas = None  
+canvas_items = []  
+selected_item = None  
+offset_x = 0  
+offset_y = 0  
+
+img_size = 150  # Image thumbnail size
+padding = 10  # Space between images
+
+def create_canvas():
+    """Creates a new canvas with user-defined size and background color."""
+    global canvas, images, image_refs, canvas_items
+
+    images.clear()
+    image_refs.clear()
+    canvas_items.clear()
+
+    try:
+        width = int(width_entry.get())
+        height = int(height_entry.get())
+    except ValueError:
+        return  
+
+    color = colorchooser.askcolor()[1]  
+
+    canvas_window = tk.Toplevel(root)
+    canvas_window.title("Custom Canvas")
+    canvas_window.geometry(f"{width}x{height}")
+
+    canvas = tk.Canvas(canvas_window, width=width, height=height, bg=color)
+    canvas.pack(fill="both", expand=True)
+
+    canvas_window.drop_target_register(DND_FILES)
+    canvas_window.dnd_bind("<<Drop>>", drop_image)
+
+    canvas.bind("<ButtonPress-1>", select_image)
+    canvas.bind("<B1-Motion>", move_image)
+    canvas.bind("<ButtonRelease-1>", deselect_image)
+
+def drop_image(event):
+    """Handles images dropped onto the canvas."""
+    file_path = event.data.strip('{}')  
+    if os.path.isdir(file_path):  
+        for file in os.listdir(file_path):
+            if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
+                add_image_to_canvas(os.path.join(file_path, file))
+    else:
+        add_image_to_canvas(file_path)
+
+def add_image_to_canvas(file_path):
+    """Adds an image to the canvas and arranges it."""
+    global canvas, images, image_refs
+    if not canvas:
+        return
+
+    img = Image.open(file_path)
+    img.thumbnail((img_size, img_size))  
+    img_tk = ImageTk.PhotoImage(img)
+
+    images.append(img_tk)  
+    image_refs.append(img_tk)  
+
+    arrange_images()
+
+def arrange_images():
+    """Automatically arranges images in a grid layout without overlapping."""
+    global canvas, images, canvas_items
+    if not canvas or not images:
+        return
+
+    canvas.delete("all")  
+    canvas_items.clear()
+
+    canvas_width = canvas.winfo_width()
+    cols = max(1, canvas_width // (img_size + padding))  
+    x, y = padding, padding
+
+    for i, img in enumerate(images):
+        img_id = canvas.create_image(x, y, image=img, anchor="nw", tags="img")
+        canvas_items.append(img_id)
+
+        if (i + 1) % cols == 0:  
+            x = padding
+            y += img_size + padding
+        else:  
+            x += img_size + padding
+
+def select_image(event):
+    """Selects an image for dragging."""
+    global selected_item, offset_x, offset_y
+    selected_item = canvas.find_closest(event.x, event.y)[0]
+    offset_x, offset_y = event.x, event.y  
+
+def move_image(event):
+    """Moves the selected image on drag."""
+    global selected_item, offset_x, offset_y
+    if selected_item:
+        dx = event.x - offset_x
+        dy = event.y - offset_y
+        canvas.move(selected_item, dx, dy)
+        offset_x, offset_y = event.x, event.y  
+
+def deselect_image(event):
+    """Deselects the image after moving."""
+    global selected_item
+    selected_item = None
+
+root = TkinterDnD.Tk()
+root.title("Mood Board App")
+root.geometry("300x250")
+
+tk.Label(root, text="Canvas Width:").pack()
+width_entry = tk.Entry(root)
+width_entry.pack()
+
+tk.Label(root, text="Canvas Height:").pack()
+height_entry = tk.Entry(root)
+height_entry.pack()
+
+create_btn = tk.Button(root, text="Create Canvas", command=create_canvas)
+create_btn.pack(pady=10)
+
+root.mainloop()
+
